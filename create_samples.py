@@ -26,4 +26,4 @@ def create_samples(path, sample_size):
         df.to_csv("%s\samples\%s_sample.csv" % (path, name[:-4]), index=False)
 
 if __name__ == "__main__":
-    create_samples(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW", 10**1)
+    create_samples(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW", 10**6)
