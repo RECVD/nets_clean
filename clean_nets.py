@@ -1,11 +1,11 @@
 import pandas as pd
-import time
+import numpy as np
 import re
 
 def make_fullyear(column_list):
     """Function to redefine 'partial year', i.e 'Address99' into 'full year', i.e 'Address1999'.
 
-    :param column_list:
+    :param column_list: list of columns in a given data frame
 
     :return List of columns with redefined years
     """
@@ -23,11 +23,13 @@ def make_fullyear(column_list):
         final_columns[i] = col
     return final_columns
 
-def normalize_df(df, var1, var2):
-    """"
-    Changes database from long form to normalized form, only including updates and removing redundant data
-    df: DataFrame in the long format.  Should have MultiIndex (DunsNumber, Year)
-    varname:  Column name of the tranformed variable
+
+def normalize_df(df):
+    """" Changes database from long form to normalized form, only including updates and removing redundant data
+
+    :param df: DataFrame in the long format.  Should have MultiIndex (DunsNumber, Year)
+
+    :return Normalized Data Frame
     """
 
     # Generate df of FirstYear and LastYear
@@ -39,14 +41,9 @@ def normalize_df(df, var1, var2):
     misc.set_index('FirstYear', append=True, inplace=True)
     df.set_index(['DunsNumber', 'Year'], inplace=True)
 
-    unique_var1 = df[var1].groupby(level=0).unique()  # remove duplicates for each DunsNumber
-    unique_var2 = df[var2].groupby(level=0).unique()
-
-    # Create column to denote whether the variable changed at all for each Duns
-    change1 = unique_var1.apply(lambda x: len(x) > 1).to_frame()
-    change2 = unique_var2.apply(lambda x: len(x) > 1).to_frame()
-    change = (change1[var1] | change2[var2]).to_frame()
-    change.columns = ['Change']
+    # Identify whether location changed at all for any given business
+    change = (df.groupby(level=0).nunique().sum(axis=1) /
+              df.shape[1] > 1).rename('Change').to_frame()
     df = change.join(df)
 
     # Drop duplicates, add DunsNumber as column to ensure no deletion between different businesses with identical rows
@@ -72,6 +69,7 @@ def normalize_df(df, var1, var2):
 
     return joined
 
+
 def create_locations(location_filename_1, location_filename_2, sep=','):
     """ Creates a normalized location file for NETS data
 
@@ -87,8 +85,8 @@ def create_locations(location_filename_1, location_filename_2, sep=','):
 
     # Need to do more error checking later on to try and break this
     try:
-        df_99 = pd.read_csv(location_filename_1, index_col=['DunsNumber'], nrows=10**3, sep=sep)
-        df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], nrows=10**3, sep=sep)
+        df_99 = pd.read_csv(location_filename_1, index_col=['DunsNumber'], nrows=10**4, sep=sep)
+        df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], nrows=10**4, sep=sep)
     except IOError as e:
         # File does not exist
         print("I/O Error: {}".format(e))
@@ -110,14 +108,14 @@ def create_locations(location_filename_1, location_filename_2, sep=','):
     # reset index and melt to long format
     df_loc.reset_index(inplace=True)
     melt_cols = ['Address', 'City', 'State', 'ZIP', 'CITYCODE', 'FipsCounty', 'CBSA']
-    time1 = time.time()
     df_loc_long = pd.wide_to_long(df_loc, melt_cols, i='DunsNumber', j='Year').sort_index().dropna(how='all')
 
     # change year dtype to int and normalize
     idx = df_loc_long.index
     df_loc_long.index = df_loc_long.index.set_levels([idx.levels[0], idx.levels[1].astype('int64')])
-    time2 = time.time()
-    normal = normalize_df(df_loc_long, 'Address', 'City')
+    normal = normalize_df(df_loc_long)
+    #fill empty strings with NaN
+    normal.replace('', np.nan, inplace=True)
 
     # change all possible dtypes to int
     for col in normal.columns:
@@ -152,11 +150,13 @@ def create_locations(location_filename_1, location_filename_2, sep=','):
     if not years_active_first_last.equals(beh_id_year_diff):
         raise ValueError("Some FirstYears are greater than LastYears")
 
+    # Return index to normal
+    normal.reset_index(level=1, drop=False, inplace=True)
+
     return normal
 
 
 if __name__ == "__main__":
-    time1 = time.time()
     create_locations(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial90to99_sample.csv",
                      r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial00to14_sample.csv")
 
