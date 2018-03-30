@@ -126,23 +126,25 @@ class Cleaner:
 
         return joined
 
-    def create_locations(self, location_filename_1, location_filename_2, sep=','):
+    def create_locations(self, location_filename_1, location_filename_2, write_path, sep=',', chunksize=10**4):
         """ Creates a normalized location file for NETS data
 
-        This file will be indexed by the BEH_ID, which is a combination of the DunsNumber and the BEH_LOC.  Other than that,
-        it will contain only location information.  Columns will include:  Address, City, State, ZIP, CBSA Code.
+        This file will be indexed by the BEH_ID, which is a combination of the DunsNumber and the BEH_LOC.  Other than
+        that, it will contain only location information.  Columns will include:  Address, City, State, ZIP, CBSA Code.
 
         :param location_filename_1: First chronological filename for addresses
         :param location_filename_2: Second chronological filename for addresses.
+        :param write_path: path to write finished location file too
         :param sep:  delimiter for reading.  Ex: ',' '\t'
+        :param chunksize: size to write in.  Default is 10**5, may need to be adjusted based on the machine's memory
 
         :return: Normalized location of type pandas.DataFrame object
         """
 
         # Need to do more error checking later on to try and break this
         try:
-            df_99 = pd.read_csv(location_filename_1, index_col=['DunsNumber'], nrows=10**4, sep=sep)
-            df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], nrows=10**4, sep=sep)
+            df_99 = pd.read_csv(location_filename_1, index_col=['DunsNumber'], chunksize=chunksize, sep=sep)
+            df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], chunksize=chunksize, sep=sep)
         except IOError as e:
             # File does not exist
             print("I/O Error: {}".format(e))
@@ -150,50 +152,58 @@ class Cleaner:
             # Index DunsNumber isn't found
             print("ValueError: Index DunsNumber not present")
 
-        # Implementing full year changes for column names before melting, and joining into one DF
-        df_99.columns = self.make_fullyear(df_99.columns)
-        df_14.columns = self.make_fullyear(df_14.columns)
-        df_loc = pd.concat([df_99, df_14], axis=1)
-        # make citycode lowercase for formatting
-        df_loc.columns = [col.upper() if 'CityCode' in col else col for col in df_loc.columns]
+        first = True # Determine if this is our first chunk for writing headers
+        for (chunk_99, chunk_14) in zip(df_99, df_14):
+            # Implementing full year changes for column names before melting, and joining into one DF
+            chunk_99.columns = self.make_fullyear(chunk_99.columns)
+            chunk_14.columns = self.make_fullyear(chunk_14.columns)
+            chunk_loc = pd.concat([chunk_99, chunk_14], axis=1)
+            # make citycode lowercase for formatting
+            chunk_loc.columns = [col.upper() if 'CityCode' in col else col for col in chunk_loc.columns]
 
-        # Lots of empty space, strip all str columns
-        df_loc.loc[:, df_loc.select_dtypes('object').columns] =  \
-            df_loc.loc[:, df_loc.select_dtypes('object').columns].apply(lambda x: x.str.strip())
+            # Lots of empty space, strip all str columns
+            chunk_loc.loc[:, chunk_loc.select_dtypes('object').columns] =  \
+                chunk_loc.loc[:, chunk_loc.select_dtypes('object').columns].apply(lambda x: x.str.strip())
 
-        # reset index and melt to long format
-        df_loc.reset_index(inplace=True)
-        melt_cols = ['Address', 'City', 'State', 'ZIP', 'CITYCODE', 'FipsCounty', 'CBSA']
-        df_loc_long = pd.wide_to_long(df_loc, melt_cols, i='DunsNumber', j='Year').sort_index().dropna(how='all')
+            # reset index and melt to long format
+            chunk_loc.reset_index(inplace=True)
+            melt_cols = ['Address', 'City', 'State', 'ZIP', 'CITYCODE', 'FipsCounty', 'CBSA']
+            chunk_loc_long = pd.wide_to_long(chunk_loc, melt_cols, i='DunsNumber', j='Year').sort_index().dropna(how='all')
 
-        # change year dtype to int and normalize
-        idx = df_loc_long.index
-        df_loc_long.index = df_loc_long.index.set_levels([idx.levels[0], idx.levels[1].astype('int64')])
-        normal = self.normalize_df(df_loc_long)
-        #fill empty strings with NaN
-        normal.replace('', np.nan, inplace=True)
+            # change year dtype to int and normalize
+            idx = chunk_loc_long.index
+            chunk_loc_long.index = chunk_loc_long.index.set_levels([idx.levels[0], idx.levels[1].astype('int64')])
+            normal = self.normalize_df(chunk_loc_long)
+            #fill empty strings with NaN
+            normal.replace('', np.nan, inplace=True)
 
-        # change all possible dtypes to int
-        for col in normal.columns:
-            try:
-                normal[col] = normal[col].astype(int)
-            except ValueError:
-                continue
+            # change all possible dtypes to int
+            for col in normal.columns:
+                try:
+                    normal[col] = normal[col].astype(int)
+                except ValueError:
+                    continue
 
-        # Create BEH_ID and BEH_LOC
-        normal.reset_index(drop=False, inplace=True)
-        normal['BEH_LOC'] = normal.groupby('DunsNumber').cumcount(ascending=False)
-        normal['BEH_ID'] = normal['BEH_LOC'] * (10 ** 9) + 10 ** 10 + normal['DunsNumber']
-        normal.set_index('BEH_ID', inplace=True)
+            # Create BEH_ID and BEH_LOC
+            normal.reset_index(drop=False, inplace=True)
+            normal['BEH_LOC'] = normal.groupby('DunsNumber').cumcount(ascending=False)
+            normal['BEH_ID'] = normal['BEH_LOC'] * (10 ** 9) + 10 ** 10 + normal['DunsNumber']
+            normal.set_index('BEH_ID', inplace=True)
 
-        return normal
+            if first:
+                normal.to_csv(write_path, float_format='%.f')
+                first = False
+                print('.')
 
+            else:
+                normal.to_csv(write_path, mode='a', header=False, float_format='%.f')
+                print('.')
 
 def main():
     clean = Cleaner()
     location = clean.create_locations(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial90to99"
-        + "_sample.csv", r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial00to14_sample.csv")
-    Checker(location).check_all()
+        + "_sample.csv", r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial00to14_sample.csv",
+                                      r"C:\Users\jc4673\Documents\NETS\data\NETS2014_WRANGLED\location.csv")
 
 if __name__ == "__main__":
     main()
