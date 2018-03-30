@@ -11,9 +11,6 @@ class Checker:
 
     def __init__(self, df):
         self.df = df
-        self.check_index()
-        self.check_first_last()
-        self.check_sums()
 
     def check_index(self):
         """Check that index is unique."""
@@ -45,6 +42,12 @@ class Checker:
         if not years_active_first_last.equals(beh_id_year_diff):
             raise ValueError("Some FirstYears are greater than LastYears")
         print("Year Sum Test: Passed")
+
+    def check_all(self):
+        """Perform all checks sequentially"""
+        self.check_index()
+        self.check_first_last()
+        self.check_sums()
 
 
 class Cleaner:
@@ -190,7 +193,7 @@ def main():
     clean = Cleaner()
     location = clean.create_locations(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial90to99"
         + "_sample.csv", r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial00to14_sample.csv")
-    Checker(location)
+    Checker(location).check_all()
 
 if __name__ == "__main__":
     main()
