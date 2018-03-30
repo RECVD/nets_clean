@@ -36,7 +36,7 @@ class Checker:
         beh_id_year_diff = (self.df.LastYear - self.df.FirstYear + 1).groupby(level=1).sum()
 
         # Reset index as it was before
-        self.df.reset_index(level=0, drop=False, inplace=True)
+        self.df.reset_index(level=1, drop=False, inplace=True)
 
         if not years_active_first_last.equals(beh_id_year_diff):
             raise ValueError("Some FirstYears are greater than LastYears")
@@ -113,12 +113,18 @@ class Cleaner:
         multi = joined[joined['Change'] == True]  # df with only businesses that had changes
 
         # Diagonal shift to fix years for multi businesses
-        shift_year = lambda joined: joined.index.get_level_values('FirstYear').to_series().shift(-1) - 1
-        lastyear = multi.groupby(level=0).apply(shift_year).combine_first(multi['LastYear']).rename('Lastyear')
+        #shift_year = lambda joined: joined.index.get_level_values('FirstYear').to_series().shift(-1) - 1
+        #lastyear = multi.groupby(level=0).apply(shift_year).combine_first(multi['LastYear']).rename('Lastyear')
+
+        multi.reset_index(drop=False, inplace=True)
+        lastyear = (multi[['DunsNumber', 'FirstYear']].groupby('DunsNumber').shift(-1) - 1).FirstYear.combine_first(
+            multi['LastYear']).rename('Lastyear')
         multi['LastYear'] = lastyear
+        multi.set_index(['DunsNumber', 'FirstYear'], inplace=True)
 
         # Join multi fixes into the original df and remove the Change column
-        joined.loc[multi.index] = multi
+        joined = multi.combine_first(joined)
+        #joined.loc[multi.index] = multi
         joined['LastYear'] = joined['LastYear'].astype('int64')
         del joined['Change']
 
@@ -210,9 +216,9 @@ class Cleaner:
 
 def main():
     clean = Cleaner()
-    location = clean.create_locations(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial90to99"
-        + "_sample.csv", r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\samples\NETS2014_AddressSpecial00to14_sample.csv",
-                                      r"C:\Users\jc4673\Documents\NETS\data\NETS2014_WRANGLED\location.csv")
+    clean.create_locations(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\NETS2014_AddressSpecial90to99.txt",
+                           r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\NETS2014_AddressSpecial00to14.txt",
+                           r"C:\Users\jc4673\Documents\NETS\data\NETS2014_WRANGLED\NETS2014_locations.csv")
 
 if __name__ == "__main__":
     time1 = time.time()
