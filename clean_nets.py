@@ -16,7 +16,6 @@ class Checker:
         """Check that index is unique."""
         if not self.df.index.is_unique:
             raise ValueError('Created BEH_ID index is not unique')
-        print('Unique Index Check:  Passed')
 
     def check_first_last(self):
         """Check that FirstYear <= LastYear for all records"""
@@ -24,7 +23,6 @@ class Checker:
         if not year_mismatch.empty:
             raise ValueError('The following BEH_ID(s) contain FirstYear > LastYear:\n {}'.format(
                 '\n'.join([str(x) for x in year_mismatch.index.values])))
-        print('FirstYear <= LastYear Check: Passed')
 
     def check_sums(self):
         """Check that the sum of all years for a DunsNumber = the First FirstYear - the final LastYear"""
@@ -41,7 +39,6 @@ class Checker:
 
         if not years_active_first_last.equals(beh_id_year_diff):
             raise ValueError("Some FirstYears are greater than LastYears")
-        print("Year Sum Test: Passed")
 
     def check_all(self):
         """Perform all checks sequentially"""
@@ -126,7 +123,7 @@ class Cleaner:
 
         return joined
 
-    def create_locations(self, location_filename_1, location_filename_2, write_path, sep=',', chunksize=10**4):
+    def create_locations(self, location_filename_1, location_filename_2, write_path, sep=',', chunksize=10**5):
         """ Creates a normalized location file for NETS data
 
         This file will be indexed by the BEH_ID, which is a combination of the DunsNumber and the BEH_LOC.  Other than
@@ -152,7 +149,7 @@ class Cleaner:
             # Index DunsNumber isn't found
             print("ValueError: Index DunsNumber not present")
 
-        first = True # Determine if this is our first chunk for writing headers
+        first = True  # Determine if this is our first chunk for writing headers
         for (chunk_99, chunk_14) in zip(df_99, df_14):
             # Implementing full year changes for column names before melting, and joining into one DF
             chunk_99.columns = self.make_fullyear(chunk_99.columns)
@@ -190,6 +187,8 @@ class Cleaner:
             normal['BEH_ID'] = normal['BEH_LOC'] * (10 ** 9) + 10 ** 10 + normal['DunsNumber']
             normal.set_index('BEH_ID', inplace=True)
 
+            # Check this chunk
+            Checker(normal).check_all()
             if first:
                 normal.to_csv(write_path, float_format='%.f')
                 first = False
