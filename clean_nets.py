@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 import numpy as np
 import re
@@ -123,7 +124,7 @@ class Cleaner:
 
         return joined
 
-    def create_locations(self, location_filename_1, location_filename_2, write_path, sep=',', chunksize=10**5):
+    def create_locations(self, location_filename_1, location_filename_2, write_path, sep=',', chunksize=5*(10**5)):
         """ Creates a normalized location file for NETS data
 
         This file will be indexed by the BEH_ID, which is a combination of the DunsNumber and the BEH_LOC.  Other than
@@ -138,10 +139,19 @@ class Cleaner:
         :return: Normalized location of type pandas.DataFrame object
         """
 
+        # Find which columns we need to read
+        with open(location_filename_1, 'r') as f1, open(location_filename_2, 'r') as f2:
+            cols_1 = f1.readline().strip().split(sep)
+            cols_2 = f2.readline().strip().split(sep)
+            usecols_1 = [x for x in cols_1 if 'CBSA' not in x]
+            usecols_2 = [x for x in cols_2 if 'CBSA' not in x]
+
         # Need to do more error checking later on to try and break this
         try:
-            df_99 = pd.read_csv(location_filename_1, index_col=['DunsNumber'], chunksize=chunksize, sep=sep)
-            df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], chunksize=chunksize, sep=sep)
+            df_99 = pd.read_csv(location_filename_1, index_col=['DunsNumber'], chunksize=chunksize, usecols=usecols_1,
+                                sep=sep)
+            df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], chunksize=chunksize, usecols=usecols_2,
+                                sep=sep)
         except IOError as e:
             # File does not exist
             print("I/O Error: {}".format(e))
@@ -164,7 +174,7 @@ class Cleaner:
 
             # reset index and melt to long format
             chunk_loc.reset_index(inplace=True)
-            melt_cols = ['Address', 'City', 'State', 'ZIP', 'CITYCODE', 'FipsCounty', 'CBSA']
+            melt_cols = ['Address', 'City', 'State', 'ZIP', 'CITYCODE', 'FipsCounty']
             chunk_loc_long = pd.wide_to_long(chunk_loc, melt_cols, i='DunsNumber', j='Year').sort_index().dropna(how='all')
 
             # change year dtype to int and normalize
@@ -205,5 +215,7 @@ def main():
                                       r"C:\Users\jc4673\Documents\NETS\data\NETS2014_WRANGLED\location.csv")
 
 if __name__ == "__main__":
+    time1 = time.time()
     main()
+    print(time.time() - time1)
 
