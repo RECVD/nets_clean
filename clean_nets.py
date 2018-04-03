@@ -130,7 +130,7 @@ class Cleaner:
 
         return joined
 
-    def create_locations(self, location_filename_1, location_filename_2, write_path, sep=',', chunksize=5*(10**5)):
+    def create_locations(self, location_filename_1, location_filename_2, write_path, sep='\t', chunksize=5*(10**5)):
         """ Creates a normalized location file for NETS data
 
         This file will be indexed by the BEH_ID, which is a combination of the DunsNumber and the BEH_LOC.  Other than
@@ -155,9 +155,9 @@ class Cleaner:
         # Need to do more error checking later on to try and break this
         try:
             df_99 = pd.read_csv(location_filename_1, index_col=['DunsNumber'], chunksize=chunksize, usecols=usecols_1,
-                                sep=sep)
+                                sep=sep, encoding='Windows-1252', error_bad_lines=False)
             df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], chunksize=chunksize, usecols=usecols_2,
-                                sep=sep)
+                                sep=sep, encoding='Windows-1252', error_bad_lines=False)
         except IOError as e:
             # File does not exist
             print("I/O Error: {}".format(e))
