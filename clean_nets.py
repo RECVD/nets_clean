@@ -10,17 +10,18 @@ class Checker:
 
     """
 
-    def __init__(self, df):
-        self.df = df
-
+    def __init__(self, df_normal, df_long, error_folder):
+        self.df_normal = df_normal
+        self.df_long = df_long
+        self.error_folder = error_folder
     def check_index(self):
         """Check that index is unique."""
-        if not self.df.index.is_unique:
+        if not self.df_normal.index.is_unique:
             raise ValueError('Created BEH_ID index is not unique')
 
     def check_first_last(self):
         """Check that FirstYear <= LastYear for all records"""
-        year_mismatch = self.df[self.df.FirstYear > self.df.LastYear]
+        year_mismatch = self.df_normal[self.df_normal.FirstYear > self.df_normal.LastYear]
         if not year_mismatch.empty:
             raise ValueError('The following BEH_ID(s) contain FirstYear > LastYear:\n {}'.format(
                 '\n'.join([str(x) for x in year_mismatch.index.values])))
@@ -28,17 +29,20 @@ class Checker:
     def check_sums(self):
         """Check that the sum of all years for a DunsNumber = the First FirstYear - the final LastYear"""
         # DunsNumber in the index makes this check much easier
-        self.df.set_index('DunsNumber', append=True, inplace=True)
+        self.df_normal.set_index('DunsNumber', append=True, inplace=True)
 
         # Sum of Year intervals = FirstYear - LastYear
-        years_active_first_last = self.df.LastYear.groupby(level=1).apply(lambda x: x.iloc[-1]) - \
-                                  self.df.FirstYear.groupby(level=1).apply(lambda x: x.iloc[0]) + 1
-        beh_id_year_diff = (self.df.LastYear - self.df.FirstYear + 1).groupby(level=1).sum()
+        years_active_first_last = self.df_normal.LastYear.groupby(level=1).apply(lambda x: x.iloc[-1]) - \
+            self.df_normal.FirstYear.groupby(level=1).apply(lambda x: x.iloc[0]) + 1
+        beh_id_year_diff = (self.df_normal.LastYear - self.df_normal.FirstYear + 1).groupby(level=1).sum()
 
         # Reset index as it was before
-        self.df.reset_index(level=1, drop=False, inplace=True)
+        self.df_normal.reset_index(level=1, drop=False, inplace=True)
 
         if not years_active_first_last.equals(beh_id_year_diff):
+            bad_duns = beh_id_year_diff[beh_id_year_diff != years_active_first_last].index.values
+            self.df_normal[self.df_normal['DunsNumber'].isin(bad_duns)].to_csv(r'{}_bad_normal.csv'.format(self.error_folder[:-4]))
+            self.df_long.reindex(bad_duns, level=0).to_csv(r'{}_bad_long.csv'.format(self.error_folder[:-4]))
             raise ValueError("Some FirstYears are greater than LastYears")
 
     def check_all(self):
@@ -99,6 +103,7 @@ class Cleaner:
         # Identify whether location changed at all for any given business
         change = (df.groupby(level=0).nunique().sum(axis=1) /
                   df.shape[1] > 1).rename('Change').to_frame()
+
         df = change.join(df)
 
         # Drop duplicates, add DunsNumber as column to ensure no deletion between different businesses with identical rows
@@ -130,7 +135,7 @@ class Cleaner:
 
         return joined
 
-    def create_locations(self, location_filename_1, location_filename_2, write_path, sep='\t', chunksize=5*(10**5)):
+    def create_locations(self, location_filename_1, location_filename_2, write_path, sep='\t', chunksize=1*(10**6)):
         """ Creates a normalized location file for NETS data
 
         This file will be indexed by the BEH_ID, which is a combination of the DunsNumber and the BEH_LOC.  Other than
@@ -154,6 +159,8 @@ class Cleaner:
 
         # Need to do more error checking later on to try and break this
         try:
+            # Lines with wrong amount of delimiters create errors and will be skipped.  In the 2014 iteration there
+            # was only one such line.
             df_99 = pd.read_csv(location_filename_1, index_col=['DunsNumber'], chunksize=chunksize, usecols=usecols_1,
                                 sep=sep, encoding='Windows-1252', error_bad_lines=False)
             df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], chunksize=chunksize, usecols=usecols_2,
@@ -181,6 +188,7 @@ class Cleaner:
             # reset index and melt to long format
             chunk_loc.reset_index(inplace=True)
             melt_cols = ['Address', 'City', 'State', 'ZIP', 'CITYCODE', 'FipsCounty']
+            #melt_cols.remove('ZIP')
             chunk_loc_long = pd.wide_to_long(chunk_loc, melt_cols, i='DunsNumber', j='Year').sort_index().dropna(how='all')
 
             # change year dtype to int and normalize
@@ -204,7 +212,7 @@ class Cleaner:
             normal.set_index('BEH_ID', inplace=True)
 
             # Check this chunk
-            Checker(normal).check_all()
+            Checker(normal, chunk_loc_long, write_path).check_all()
             if first:
                 normal.to_csv(write_path, float_format='%.f')
                 first = False
@@ -216,9 +224,14 @@ class Cleaner:
 
 def main():
     clean = Cleaner()
-    clean.create_locations(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\NETS2014_AddressSpecial90to99.txt",
-                           r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\NETS2014_AddressSpecial00to14.txt",
-                           r"C:\Users\jc4673\Documents\NETS\data\NETS2014_WRANGLED\NETS2014_locations.csv")
+    try:
+        clean.create_locations(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\NETS2014_AddressSpecial90to99.txt",
+                               r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\NETS2014_AddressSpecial00to14.txt",
+                               r"C:\Users\jc4673\Documents\NETS\data\NETS2014_WRANGLED\NETS2014_locations.csv")
+    except FileNotFoundError:
+        clean.create_locations(r"E:\NETDatabase2014_RAW\NETS2014_AddressSpecial90to99.txt",
+                              r"E:\NETDatabase2014_RAW\NETS2014_AddressSpecial00to14.txt",
+                              r"E:\NETSDatabase2014_CLEANED\NETS2014_Locations.csv")
 
 if __name__ == "__main__":
     time1 = time.time()
