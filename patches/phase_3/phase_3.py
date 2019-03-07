@@ -45,9 +45,9 @@ def load_main_cat_config(filepath, hierarchies):
 def load_hierarchy_list(filepath):
     """ Loads the hierachy list """
     with open(filepath, 'r') as f:
-        hiear_list = ["adr_net_{}_c_2014".format(line.strip().lower()) for line in f.readlines()]
+        hier_list = ["adr_net_{}_c_2014".format(line.strip().lower()) for line in f.readlines()]
 
-    return hiear_list
+    return hier_list
 
 
 def get_code(var_name_long):
@@ -65,7 +65,7 @@ def get_hierarchy(row, hier_list):
             return "adr_net_{}h_c_2014".format(code)
 
 
-def get_good_columns(filepath, main_cats):
+def get_good_columns(filepath, main_cats, main_cats_hier):
     """Get all columns for reading except main categories and hierarchy"""
     with open(filepath, 'r') as f:
         cols = f.readline().strip().split(',')
@@ -74,8 +74,9 @@ def get_good_columns(filepath, main_cats):
     search = re.compile("_.{3}h_c_")
     cols = [x for x in cols if not re.search(search, x)]
 
-    # exclude main categories
-    cols = [x for x in cols if not any(y.lower() == x for y in main_cats.keys())]
+    # exclude main categories and main hierarchy categories
+    cols = [x for x in cols if not
+        any(y.lower() == x or z.lower() == x for y, z in zip(main_cats.keys(), main_cats_hier.keys()))]
 
     return cols
 
@@ -114,7 +115,9 @@ def set_main_cats(category_dummies, main_cats):
     for main_cat, sub_cats in main_cats.items():
         sub[main_cat] = sub[sub_cats].any(axis=1).astype(int)
 
-    cat_main = sub.reindex(category_dummies.index).fillna(0)
+    cat_main = sub.reindex(category_dummies.index) \
+        .fillna(0) \
+        .astype(int)
 
     return cat_main[sorted(main_cats.keys())]
 
@@ -132,41 +135,40 @@ def write_file(df, writefile, first):
             print(".")
 
 
-def main(data_path, write_path, main_cats_path, hier_list_path):
-    """Implement the total fix:  Read, transform, write."""
-    main_cats_hier = load_main_cat_config(main_cats_path, hierarchies=True)
-    main_cats = load_main_cat_config(main_cats_path, hierarchies=False)
+def reclassify(df, hier_list, main_cats, main_cats_hier):
+    # split data into nets vs other
+    nets_cols = [x for x in df.columns if 'net' in x]
+    gis_cols = [x for x in df.columns if 'net' not in x]
 
-    hier_list = load_hierarchy_list(hier_list_path)
+    hierarchy = set_hierarchy(df, hier_list)
 
-    good_cols = get_good_columns(data_path, main_cats)
-    df = pd.read_csv(data_path, usecols=good_cols, chunksize=10**3)
+    # to be altered after truth revealed about main categories
+    main_hier_dummies = set_main_cats(hierarchy, main_cats_hier)
+    main_dummies = set_main_cats(df[hier_list], main_cats)
 
-    first = True
-    for chunk in df:
-        # split data into nets vs other
-        nets_cols = [x for x in chunk.columns if 'net' in x]
-        gis_cols = [x for x in chunk.columns if 'net' not in x]
-
-        hierarchy = set_hierarchy(chunk, hier_list)
-
-        # to be altered after truth revealed about main categories
-        main_hier_dummies = set_main_cats(hierarchy, main_cats_hier)
-        main_dummies = set_main_cats(chunk[hier_list], main_cats)
-
-        final_chunk = pd.concat([chunk[nets_cols],
+    reclassified_df = pd.concat([df[nets_cols],
                                  hierarchy,
                                  main_dummies,
                                  main_hier_dummies,
-                                 chunk[gis_cols]], axis=1)
+                                 df[gis_cols]], axis=1)
+    return reclassified_df
 
-        from collections import Counter
-        final_cols = final_chunk.columns.tolist()
-        cnt = Counter(final_cols)
+
+def main(data_path, write_path, main_cats_path, hier_list_path, chunksize=10**6):
+    """Implement the total fix:  Read, transform, write."""
+    main_cats_hier = load_main_cat_config(main_cats_path, hierarchies=True)
+    main_cats = load_main_cat_config(main_cats_path, hierarchies=False)
+    hier_list = load_hierarchy_list(hier_list_path)
+
+    good_cols = get_good_columns(data_path, main_cats, main_cats_hier)
+    df = pd.read_csv(data_path, usecols=good_cols, chunksize=chunksize)
+
+    first = True
+    for chunk in df:
+        final_chunk = reclassify(chunk, hier_list, main_cats, main_cats_hier)
         write_file(final_chunk, write_path, first)
-
+        print('.')
         first = False
-        break
 
 
 if __name__ == "__main__":
@@ -177,8 +179,8 @@ if __name__ == "__main__":
 
     data_path = root.parent.parent.parent / "data" / "recvd_net_vars_v7_20180829.csv"
     write_path = root.parent / "data" / "data_out" / "recvd_net_vars_v8_20190222.csv"
-    main_cats_path = root.parent.parent / 'config' / 'supercategories.json'
-    hier_list_path = root.parent.parent / 'config' /'hierarchy_080318_list.txt'
+    main_cats_path = root.parent.parent / 'config' / 'main_categories.json'
+    hier_list_path = root.parent.parent / 'config' /'hierarchy_list.txt'
 
     time1 = time.time()
     main(data_path, write_path, main_cats_path, hier_list_path)
