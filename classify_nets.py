@@ -121,6 +121,7 @@ class Classifier:
             return self.df['Sales'].isnull()
 
         # Evaluate booleans and return based on the conditional code in the JSON file
+        # just change return final to the end, its cleaner
 
         if condit_code == 2:
             final.loc[sic_exclusive_bool() | (sic_range_bool() & name_bool(name_only=True))] = 1

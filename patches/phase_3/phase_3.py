@@ -127,12 +127,10 @@ def write_file(df, writefile, first):
     if first:
         with open(writefile, "w", newline="\n") as f:
             df.to_csv(f, index=False)
-            print(".")
 
     else:
         with open(writefile, "a", newline="\n") as f:
             df.to_csv(f, index=False, header=False)
-            print(".")
 
 
 def reclassify(df, hier_list, main_cats, main_cats_hier):
@@ -164,11 +162,13 @@ def main(data_path, write_path, main_cats_path, hier_list_path, chunksize=10**6)
     df = pd.read_csv(data_path, usecols=good_cols, chunksize=chunksize)
 
     first = True
+    i = 1
     for chunk in df:
+        print(i)
         final_chunk = reclassify(chunk, hier_list, main_cats, main_cats_hier)
         write_file(final_chunk, write_path, first)
-        print('.')
         first = False
+        i += 1
 
 
 if __name__ == "__main__":
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     root = Path.cwd()
 
     data_path = root.parent.parent.parent / "data" / "recvd_net_vars_v7_20180829.csv"
-    write_path = root.parent / "data" / "data_out" / "recvd_net_vars_v8_20190222.csv"
+    write_path = root.parent / "data" / "data_out" / "recvd_net_vars_v8_20190306.csv"
     main_cats_path = root.parent.parent / 'config' / 'main_categories.json'
     hier_list_path = root.parent.parent / 'config' /'hierarchy_list.txt'
 
