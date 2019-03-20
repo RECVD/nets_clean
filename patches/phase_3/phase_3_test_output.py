@@ -40,16 +40,20 @@ def test_aggregate_hier_aux_sum_equals_hier_main_sum(df_output, main_cats_hier):
     assert wal_aux_hier_sum == wal_hier_sum
 
 if __name__ == "__main__":
+    import os
     import pandas as pd
+    from datetime import datetime
     from pathlib import Path
     import phase_3
 
+    print("Beginning Testing at {}\n".format(str(datetime.now())))
     print("Setting up Testing Parameters:")
     config_filepath = Path.cwd().parent.parent / 'config'
     main_cats_filepath = config_filepath / 'main_categories.json'
     hierarchies_filepath = config_filepath / 'hierarchy_list.txt'
     df_dirpath = Path.cwd().parent / 'data' / 'data_intermediate'
-    df_sample_path = df_dirpath / 'recvd_net_vars_v8_20190318_sample.csv'
+    df_sample_path = [x for x in df_dirpath.iterdir() if "sample" in str(x)][0]
+    print("Performing tests on {}\n".format(df_sample_path.name))
 
 
     main_cats = phase_3.load_main_cat_config(main_cats_filepath, hierarchies=False)
