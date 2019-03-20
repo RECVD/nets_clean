@@ -125,11 +125,11 @@ def set_main_cats(category_dummies, main_cats):
 def write_file(df, writefile, first):
     """Write df to file.  Only write column names if first=True"""
     if first:
-        with open(writefile, "w", newline="\n") as f:
+        with open(writefile, "w", newline="\n", encoding='utf-8') as f:
             df.to_csv(f, index=False)
 
     else:
-        with open(writefile, "a", newline="\n") as f:
+        with open(writefile, "a", newline="\n", encoding='utf-8') as f:
             df.to_csv(f, index=False, header=False)
 
 
