@@ -40,7 +40,6 @@ def test_aggregate_hier_aux_sum_equals_hier_main_sum(df_output, main_cats_hier):
     assert wal_aux_hier_sum == wal_hier_sum
 
 if __name__ == "__main__":
-    import os
     import pandas as pd
     from pathlib import Path
     import phase_3
@@ -51,13 +50,11 @@ if __name__ == "__main__":
     hierarchies_filepath = config_filepath / 'hierarchy_list.txt'
     df_dirpath = Path.cwd().parent / 'data' / 'data_intermediate'
     df_sample_path = df_dirpath / 'recvd_net_vars_v8_20190318_sample.csv'
-    df_filenames = os.listdir(df_dirpath)
 
 
     main_cats = phase_3.load_main_cat_config(main_cats_filepath, hierarchies=False)
     main_cats_hier = phase_3.load_main_cat_config(main_cats_filepath, hierarchies=True)
     hier_list = phase_3.load_hierarchy_list(hierarchies_filepath)
-    good_cols = phase_3.get_good_columns(df_dirpath / df_filenames[0], main_cats, main_cats_hier)
 
     with open(config_filepath / 'aux_no_hier_vars.txt', 'r') as f:
         aux_no_hier = [line.strip() for line in f.readlines()]
@@ -68,16 +65,18 @@ if __name__ == "__main__":
     with open(config_filepath / 'main_hier_vars.txt', 'r') as f:
         main_hier = [line.strip() for line in f.readlines()]
 
-    df_output = pd.read_csv(df_sample_path)
-    test_output_aux_hierarchy_unique(df_output, aux_hier)
-    print("Unique Hierarchy Test Passed!")
-    test_aux_present_when_aux_hierarchy_present(df_output, aux_hier, aux_no_hier)
-    print("Aux Present When Hierarchy Present Test Passed!")
-    test_hierarchy_when_only_one_aux(df_output, aux_hier, aux_no_hier)
-    print("Hierarchy == Aux When Only One Aux Test Passed!")
-    test_aggregate_aux_sum_greater_than_main_sum(df_output, main_cats)
-    print("Aggregate Aux Sum Greater Than Main Sum Test Passed!")
-    test_aggregate_hier_aux_sum_equals_hier_main_sum(df_output, main_cats_hier)
-    print("Aggregate Hierarchy Aux Sum == Hierarchy Main Sum Test Passed!\n")
+    df_output = pd.read_csv(df_sample_path, chunksize=10**6)
+    for i, chunk in enumerate(df_output):
+        print("Beginning testing on chunk {}".format(i+1))
+        test_output_aux_hierarchy_unique(chunk, aux_hier)
+        print("Unique Hierarchy Test Passed!")
+        test_aux_present_when_aux_hierarchy_present(chunk, aux_hier, aux_no_hier)
+        print("Aux Present When Hierarchy Present Test Passed!")
+        test_hierarchy_when_only_one_aux(chunk, aux_hier, aux_no_hier)
+        print("Hierarchy == Aux When Only One Aux Test Passed!")
+        test_aggregate_aux_sum_greater_than_main_sum(chunk, main_cats)
+        print("Aggregate Aux Sum Greater Than Main Sum Test Passed!")
+        test_aggregate_hier_aux_sum_equals_hier_main_sum(chunk, main_cats_hier)
+        print("Aggregate Hierarchy Aux Sum == Hierarchy Main Sum Test Passed!\n")
 
     print("All tests passed!")
