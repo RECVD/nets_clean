@@ -139,6 +139,11 @@ def reclassify(df, hier_list, main_cats, main_cats_hier):
     gis_cols = [x for x in df.columns if 'net' not in x]
 
     hierarchy = set_hierarchy(df, hier_list)
+    # Add NOT variable
+    hierarchy['adr_net_not_c_2014'] = 1
+    cat_bool = hierarchy.any(axis=1)
+    hierarchy.loc[cat_bool, 'adr_net_not_c_2014'] = 0
+
 
     # to be altered after truth revealed about main categories
     main_hier_dummies = set_main_cats(hierarchy, main_cats_hier)
@@ -152,7 +157,7 @@ def reclassify(df, hier_list, main_cats, main_cats_hier):
     return reclassified_df
 
 
-def main(data_path, write_path, main_cats_path, hier_list_path, chunksize=10**6):
+def main(data_path, write_path, main_cats_path, hier_list_path, chunksize=10**3):
     """Implement the total fix:  Read, transform, write."""
     main_cats_hier = load_main_cat_config(main_cats_path, hierarchies=True)
     main_cats = load_main_cat_config(main_cats_path, hierarchies=False)
@@ -178,7 +183,7 @@ if __name__ == "__main__":
     root = Path.cwd()
 
     data_path = root.parent.parent.parent / "data" / "recvd_net_vars_v7_20180829.csv"
-    write_path = root.parent / "data" / "data_out" / "recvd_net_vars_v8_20190306.csv"
+    write_path = root.parent / "data" / "data_out" / "some_shit.csv" #"recvd_net_vars_v8_20190306.csv"
     main_cats_path = root.parent.parent / 'config' / 'main_categories.json'
     hier_list_path = root.parent.parent / 'config' /'hierarchy_list.txt'
 
