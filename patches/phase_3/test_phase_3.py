@@ -214,4 +214,5 @@ def test_get_good_columns():
 def test_output_shape():
     assert len(df_input) == len(df_output)
     # Subtract one because taking DES out of the hierarchy
-    assert len(df_input_allcols) - 1 == len(df_output.columns)
+    # Add it back because of adding NOT
+    assert len(df_input_allcols) == len(df_output.columns)
