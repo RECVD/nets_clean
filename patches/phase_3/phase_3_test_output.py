@@ -50,6 +50,7 @@ if __name__ == "__main__":
     main_cats_filepath = config_filepath / 'main_categories.json'
     hierarchies_filepath = config_filepath / 'hierarchy_list.txt'
     df_dirpath = Path.cwd().parent / 'data' / 'data_intermediate'
+    df_sample_path = df_dirpath / 'recvd_net_vars_v8_20190318_sample.csv'
     df_filenames = os.listdir(df_dirpath)
 
 
@@ -335,20 +336,34 @@ if __name__ == "__main__":
         'adr_net_ceuh_c_2014',
         'adr_net_walh_c_2014'
     ]
+    #
+    # for i, df_filename in enumerate(df_filenames):
+    #     print("Beginning Testing on Sample {}".format(i+1))
+    #     df_output = pd.read_csv(df_dirpath / df_filename)
+    #
+    #     test_output_aux_hierarchy_unique(df_output, aux_hier)
+    #     print("Unique Hierarchy Test Passed!")
+    #     test_aux_present_when_aux_hierarchy_present(df_output, aux_hier, aux_no_hier)
+    #     print("Aux Present When Hierarchy Present Test Passed!")
+    #     test_hierarchy_when_only_one_aux(df_output, aux_hier, aux_no_hier)
+    #     print("Hierarchy == Aux When Only One Aux Test Passed!")
+    #     test_aggregate_aux_sum_greater_than_main_sum(df_output, main_cats)
+    #     print("Aggregate Aux Sum Greater Than Main Sum Test Passed!")
+    #     test_aggregate_hier_aux_sum_equals_hier_main_sum(df_output, main_cats_hier)
+    #     print("Aggregate Hierarchy Aux Sum == Hierarchy Main Sum Test Passed!\n")
+    #
+    # print("All tests passed!")
 
-    for i, df_filename in enumerate(df_filenames):
-        print("Beginning Testing on Sample {}".format(i+1))
-        df_output = pd.read_csv(df_dirpath / df_filename)
-
-        test_output_aux_hierarchy_unique(df_output, aux_hier)
-        print("Unique Hierarchy Test Passed!")
-        test_aux_present_when_aux_hierarchy_present(df_output, aux_hier, aux_no_hier)
-        print("Aux Present When Hierarchy Present Test Passed!")
-        test_hierarchy_when_only_one_aux(df_output, aux_hier, aux_no_hier)
-        print("Hierarchy == Aux When Only One Aux Test Passed!")
-        test_aggregate_aux_sum_greater_than_main_sum(df_output, main_cats)
-        print("Aggregate Aux Sum Greater Than Main Sum Test Passed!")
-        test_aggregate_hier_aux_sum_equals_hier_main_sum(df_output, main_cats_hier)
-        print("Aggregate Hierarchy Aux Sum == Hierarchy Main Sum Test Passed!\n")
+    df_output = pd.read_csv(df_sample_path)
+    test_output_aux_hierarchy_unique(df_output, aux_hier)
+    print("Unique Hierarchy Test Passed!")
+    test_aux_present_when_aux_hierarchy_present(df_output, aux_hier, aux_no_hier)
+    print("Aux Present When Hierarchy Present Test Passed!")
+    test_hierarchy_when_only_one_aux(df_output, aux_hier, aux_no_hier)
+    print("Hierarchy == Aux When Only One Aux Test Passed!")
+    test_aggregate_aux_sum_greater_than_main_sum(df_output, main_cats)
+    print("Aggregate Aux Sum Greater Than Main Sum Test Passed!")
+    test_aggregate_hier_aux_sum_equals_hier_main_sum(df_output, main_cats_hier)
+    print("Aggregate Hierarchy Aux Sum == Hierarchy Main Sum Test Passed!\n")
 
     print("All tests passed!")

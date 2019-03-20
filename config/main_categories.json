@@ -1,0 +1,423 @@
+{
+    "WRA": [
+        "WRS",
+        "WRN"
+    ],
+    "SMA": [
+        "SMK",
+        "SMN",
+        "SCT"
+    ],
+    "CNA": [
+        "CNV",
+        "CNN",
+        "CNG"
+    ],
+    "BKA": [
+        "BKS",
+        "BKN"
+    ],
+    "USR": [
+        "CNV",
+        "CNN",
+        "CNG",
+        "BDS",
+        "BKS",
+        "BKN"
+    ],
+    "USU": [
+        "CNV",
+        "CNN",
+        "CNG",
+        "BDS",
+        "GSS",
+        "NUT",
+        "BKS",
+        "BKN",
+        "DRG",
+        "DRN"
+    ],
+    "HSR": [
+        "SMK",
+        "SMN",
+        "SCT",
+        "FVM"
+    ],
+    "HSU": [
+        "CMN",
+        "SMK",
+        "SMN",
+        "SCT",
+        "FSH",
+        "FVM",
+        "NAT",
+        "DDP"
+    ],
+    "FSA": [
+        "WRS",
+        "WRN",
+        "CMN",
+        "SMK",
+        "SMN",
+        "SCT",
+        "CNV",
+        "CNN",
+        "CNG",
+        "BDS",
+        "GRY",
+        "GSS",
+        "MET",
+        "FSH",
+        "FVM",
+        "NAT",
+        "NUT",
+        "BKS",
+        "BKN",
+        "OFD",
+        "DDP"
+    ],
+    "CFA": [
+        "CFS",
+        "CFN"
+    ],
+    "FFA": [
+        "FFS",
+        "QSV",
+        "FCS"
+    ],
+    "ETA": [
+        "EEP",
+        "EAP",
+        "EAO",
+        "EEU"
+    ],
+    "RSA": [
+        "PIZ",
+        "CFS",
+        "CFN",
+        "FFS",
+        "QSV",
+        "FCS",
+        "CSD",
+        "EEP",
+        "EAP",
+        "EAO",
+        "EEU",
+        "EAT"
+    ],
+    "AUR": [
+        "CNV",
+        "CNN",
+        "CNG",
+        "BDS",
+        "BKS",
+        "BKN",
+        "PIZ",
+        "CFS",
+        "CFN",
+        "FFS",
+        "QSV",
+        "FCS"
+    ],
+    "AUU": [
+        "CNV",
+        "CNN",
+        "CNG",
+        "BDS",
+        "GSS",
+        "NUT",
+        "BKS",
+        "BKN",
+        "PIZ",
+        "CFS",
+        "CFN",
+        "FFS",
+        "QSV",
+        "FCS",
+        "DRG",
+        "DRN"
+    ],
+    "AAL": [
+        "LIQ",
+        "BAR"
+    ],
+    "APA": [
+        "MUL",
+        "MPA",
+        "VPA"
+    ],
+    "ACP": [
+        "CMU",
+        "CMP",
+        "CVP"
+    ],
+    "FIN": [
+        "BNK",
+        "CRD"
+    ],
+    "DEP": [
+        "CMN",
+        "DPT",
+        "DDP",
+        "GMN"
+    ],
+    "SFC": [
+        "PIZ",
+        "CFS",
+        "CFN",
+        "CSD",
+        "EEP",
+        "EAP",
+        "EAO",
+        "EEU",
+        "EAT",
+        "BAR",
+        "NCL"
+    ],
+    "FSR": [
+        "MUL",
+        "MPA",
+        "VPA",
+        "BEU",
+        "LIB",
+        "REL",
+        "RCC"
+    ],
+    "FSU": [
+        "WRS",
+        "WRN",
+        "CMN",
+        "SMK",
+        "SMN",
+        "SCT",
+        "CNV",
+        "CNN",
+        "CNG",
+        "BDS",
+        "GRY",
+        "GSS",
+        "MET",
+        "FSH",
+        "FVM",
+        "NAT",
+        "NUT",
+        "BKS",
+        "BKN",
+        "OFD",
+        "MUL",
+        "MPA",
+        "VPA",
+        "DDP",
+        "BEU",
+        "LIB",
+        "REL",
+        "RCC"
+    ],
+    "SID": [
+        "SPA",
+        "MAG",
+        "PBE",
+        "SCB",
+        "SPS",
+        "ZOO",
+        "GAM",
+        "ARC",
+        "PLO",
+        "SLC",
+        "AMU"
+    ],
+    "NGT": [
+        "BAR",
+        "SCB",
+        "NCL",
+        "GAM"
+    ],
+    "CUL": [
+        "LIB",
+        "MAG",
+        "PBE"
+    ],
+    "CAS": [
+        "CMU",
+        "CMP",
+        "CVP",
+        "LIB",
+        "REL",
+        "ZOO",
+        "ARC",
+        "AMU"
+    ],
+    "SAF": [
+        "POL",
+        "FIR"
+    ],
+    "EDD": [
+        "SCL",
+        "JCO",
+        "UNI"
+    ],
+    "DRA": [
+        "DRG",
+        "DRN"
+    ],
+    "MHA": [
+        "MHH",
+        "MHO"
+    ],
+    "BHA": [
+        "BHH",
+        "BHO"
+    ],
+    "MBH": [
+        "MHH",
+        "MHO",
+        "BHH",
+        "BHO"
+    ],
+    "HOI": [
+        "MHH",
+        "BHH",
+        "HOS"
+    ],
+    "CMB": [
+        "URG",
+        "RTC"
+    ],
+    "AMB": [
+        "MHO",
+        "BHO",
+        "URG",
+        "RTC",
+        "PHT",
+        "KCT",
+        "HPC",
+        "DDS"
+    ],
+    "AEC": [
+        "MHH",
+        "BHH",
+        "HOS",
+        "URG",
+        "RTC"
+    ],
+    "ACT": [
+        "MHH",
+        "MHO",
+        "BHH",
+        "BHO",
+        "HOS",
+        "URG",
+        "RTC",
+        "PHT",
+        "KCT",
+        "HPC",
+        "DDS"
+    ],
+    "PTM": [
+        "MAS",
+        "PHT"
+    ],
+    "DPA": [
+        "CMN",
+        "DDP"
+    ],
+    "RUA": [
+        "PIZ",
+        "CFS",
+        "CFN",
+        "FFS",
+        "QSV",
+        "FCS"
+    ],
+    "CER": [
+        "LIB",
+        "MAG",
+        "PBE",
+        "RCC",
+        "PLO",
+        "SLC",
+        "JCO",
+        "UNI"
+    ],
+    "CEU": [
+        "MUL",
+        "LIB",
+        "MAG",
+        "PBE",
+        "REL",
+        "RCC",
+        "PLO",
+        "SLC",
+        "JCO",
+        "UNI"
+    ],
+    "WAL": [
+        "CMN",
+        "SMK",
+        "SMN",
+        "SCT",
+        "CNV",
+        "CNN",
+        "BDS",
+        "GRY",
+        "MET",
+        "FSH",
+        "FVM",
+        "NAT",
+        "NUT",
+        "BKS",
+        "BKN",
+        "OFD",
+        "PIZ",
+        "CFS",
+        "CFN",
+        "FFS",
+        "QSV",
+        "FCS",
+        "CSD",
+        "EEP",
+        "EAP",
+        "EAO",
+        "EEU",
+        "EAT",
+        "LIQ",
+        "BAR",
+        "MUL",
+        "MPA",
+        "VPA",
+        "BNK",
+        "CRD",
+        "POS",
+        "DPT",
+        "DDP",
+        "GMN",
+        "TAN",
+        "MAS",
+        "LAU",
+        "BEU",
+        "SPA",
+        "LIB",
+        "MAG",
+        "PBE",
+        "SCB",
+        "REL",
+        "NCL",
+        "SPS",
+        "ZOO",
+        "GAM",
+        "ARC",
+        "RCC",
+        "PLO",
+        "SLC",
+        "AMU",
+        "SRV",
+        "DCR",
+        "PSC",
+        "SCL",
+        "JCO",
+        "UNI",
+        "DRG",
+        "DRN",
+        "OWR"
+    ]
+}

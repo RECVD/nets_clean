@@ -1,50 +1,31 @@
-import time
-import random
-from pathlib import Path
+import pandas as pd
 
+def patch_data_final(data_filename_in, data_filename_out, hier_columns):
+    df = pd.read_csv(data_filename_in, chunksize=10**6, encoding='ISO-8859-1')
 
-def random_sampler(read_filename, write_filename, k):
-    """Write a random sample of read_filename to write_filename of size k"""
-    with open(read_filename, 'rb') as fr, open(write_filename, 'wb') as fw:
-        line1 = fr.readline()
-        fw.write(line1)
+    first = True
+    i = 1
+    for chunk in df:
+        chunk['adr_net_not_c_2014'] = 1
+        cat_bool = chunk[hier_columns].any(axis=1)
+        chunk.loc[cat_bool, 'adr_net_not_c_2014'] = 0
 
-        fr.seek(0, 2)
-        filesize = fr.tell()
-        random_set = sorted(random.sample(range(filesize), k))
-
-        for i in range(k):
-            fr.seek(random_set[i])
-            # Skip current line (because we might be in the middle of a line)
-            fr.readline()
-            line = fr.readline()
-            fw.write(line)
-
-
-def reverse_dummies(dummies):
-    """Get the original categorical from a set of dummy variables"""
-    return dummies.dot(dummies.columns)
-
-
-def prob_sampler(df, samp_frac, hier_colnames, probs):
-    df['hier_cat'] = reverse_dummies(df[hier_colnames])
-    df_probs = df.merge(probs, how='outer', on='hier_cat')
-    samp = df_probs.sample(frac=samp_frac, replace=False, weights='prob', random_state=0)
-    samp.drop(['hier_cat', 'prob'], axis=1, inplace=True)
-
-    return samp
-
-
+        if first:
+            with open(data_filename_out, "w", newline="\n", encoding='utf-8') as f:
+                chunk.to_csv(f, index=False)
+            first = False
+            print(i)
+            i += 1
+        else:
+            with open(data_filename_out, "a", newline="\n", encoding='utf-8') as f:
+                chunk.to_csv(f, index=False, header=False)
+            print(i)
+            i += 1
 
 if __name__ == "__main__":
-    import pandas as pd
-    
-    t1 = time.time()
-    data_in = Path.cwd().parent / 'data' / 'data_out' / 'recvd_net_vars_v8_20190314_catOnly.csv'
-    probs = Path.cwd().parent / 'data' / 'data_intermediate' / 'category_prob_dist.csv'
-    data_out = Path.cwd().parent / 'data' / 'data_intermediate' / 'recvd_net_vars_v8_20190318_sample.csv'
-
-    hier_colnames = [
+    data_filename_in = r"C:\Users\jc4673\Documents\Columbia\NETS\nets_clean\patches\data\data_out\recvd_net_vars_v8_20190311.csv"
+    data_filename_out = r"C:\Users\jc4673\Documents\Columbia\NETS\nets_clean\patches\data\data_out\recvd_net_vars_v8_20190318.csv"
+    hierarchy_cols = [
         'adr_net_amuh_c_2014',
         'adr_net_arch_c_2014',
         'adr_net_barh_c_2014',
@@ -135,21 +116,4 @@ if __name__ == "__main__":
         'adr_net_wrsh_c_2014',
         'adr_net_zooh_c_2014'
     ]
-    df = pd.read_csv(data_in, chunksize=10**6, encoding='ISO-8859-1')
-    probs = pd.read_csv(probs)
-
-    for i, chunk in enumerate(df):
-        samp = prob_sampler(chunk, .1, hier_colnames, probs)
-
-        if i == 0:
-            with open(data_out, 'w', encoding='utf-8', newline='\n') as f:
-                samp.to_csv(f, index=False)
-            print(i)
-
-        else:
-            with open(data_out, 'a', encoding='utf-8', newline='\n') as f:
-                samp.to_csv(f, header=False, index=False)
-            print(i)
-
-
-
+    patch_data_final(data_filename_in, data_filename_out, hierarchy_cols)

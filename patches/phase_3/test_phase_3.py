@@ -10,7 +10,7 @@ main_cats_hier = None
 hierarchies = None
 good_cols = None
 df_input = None
-
+df_output = None
 
 def setup_module():
     print('----------setup------------')
@@ -23,16 +23,19 @@ def setup_module():
 
     global main_cats
     main_cats = phase_3.load_main_cat_config(main_cats_filepath, hierarchies=False)
+
     global main_cats_hier
     main_cats_hier = phase_3.load_main_cat_config(main_cats_filepath, hierarchies=True)
+
     global hier_list
     hier_list = phase_3.load_hierarchy_list(hierarchies_filepath)
+
     global good_cols
     good_cols = phase_3.get_good_columns(df_filepath, main_cats, main_cats_hier)
 
     # For output testing
     global df_input
-    df_input = pd.read_csv(df_filepath, usecols=good_cols, nrows=10**6)
+    df_input = pd.read_csv(df_filepath, usecols=good_cols, nrows=10**3)
     global df_input_allcols
     with open(df_filepath, 'r') as f:
         df_input_allcols = f.readline().strip().split(',')
@@ -329,6 +332,7 @@ def test_load_main_cat_config():
     assert len(set(main_cats_hier.keys())) == 44
 
     # Spot check
+    x = 2
     assert main_cats['adr_net_ngt_c_2014'] == \
            ['adr_net_bar_c_2014',
             'adr_net_scb_c_2014',
@@ -475,52 +479,7 @@ def test_get_good_columns():
     assert [x for x in good_cols if x not in truth] == []
     assert [x for x in truth if x not in good_cols] == []
 
-
-# Final Data Testing
 def test_output_shape():
     assert len(df_input) == len(df_output)
     # Subtract one because taking DES out of the hierarchy
     assert len(df_input_allcols) - 1 == len(df_output.columns)
-
-
-def test_output_aux_hierarchy_unique():
-    output_hier = df_output[aux_hier]
-    hier_sums = output_hier.sum(axis=1) <= 1
-    assert all(hier_sums)
-
-
-def test_aux_present_when_aux_hierarchy_present():
-    output_aux_no_hier = df_output[sorted(aux_no_hier)]
-    output_aux_hier = df_output[sorted(aux_hier)]
-    assert (output_aux_no_hier.values >= output_aux_hier.values).all()
-
-
-def test_hierarchy_when_only_one_aux():
-    output_one_aux = df_output[df_output[aux_no_hier].sum(axis=1) == 1]
-    output_one_aux_no_hier = output_one_aux[sorted(aux_no_hier)]
-    output_one_aux_hier = output_one_aux[sorted(aux_hier)]
-    assert np.array_equal(output_one_aux_no_hier.values,
-                          output_one_aux_hier)
-
-
-def test_aggregate_aux_sum_greater_than_main_sum():
-    # test this with WAL category
-    wal_sum = df_output['adr_net_wal_c_2014'].sum()
-    wal_aux_sum = df_output[main_cats['adr_net_wal_c_2014']] \
-        .sum(axis=1) \
-        .sum()
-
-    assert wal_aux_sum > wal_sum
-
-
-def test_aggregate_hier_aux_sum_equals_hier_main_sum():
-    # test this with the WAL category
-    wal_hier_sum = df_output['adr_net_walh_c_2014'].sum()
-    wal_aux_hier_sum = df_output[main_cats_hier['adr_net_walh_c_2014']] \
-        .sum(axis=1) \
-        .sum()
-
-    assert wal_aux_hier_sum == wal_hier_sum
-
-
-
