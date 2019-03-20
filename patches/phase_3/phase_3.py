@@ -133,9 +133,18 @@ def write_file(df, writefile, first):
             df.to_csv(f, index=False, header=False)
 
 
+def get_non_rundle_columns(net_columns):
+    """Given a list of NETS variable columns, return them with the Rundle columns stripped"""
+    rundle_codes = ["adl", "adp", "edu", "med", "pav", "pwd", "des"]
+    rundle_columns = ["adr_net_{}_c_2014".format(x) for x in rundle_codes]
+    non_rundle_columns = [x for x in net_columns if x not in rundle_columns]
+    return non_rundle_columns
+
+
 def reclassify(df, hier_list, main_cats, main_cats_hier):
     # split data into nets vs other
     nets_cols = [x for x in df.columns if 'net' in x]
+    non_rundle_net_columns = get_non_rundle_columns(nets_cols)
     gis_cols = [x for x in df.columns if 'net' not in x]
 
     hierarchy = set_hierarchy(df, hier_list)
@@ -144,12 +153,10 @@ def reclassify(df, hier_list, main_cats, main_cats_hier):
     cat_bool = hierarchy.any(axis=1)
     hierarchy.loc[cat_bool, 'adr_net_not_c_2014'] = 0
 
-
-    # to be altered after truth revealed about main categories
     main_hier_dummies = set_main_cats(hierarchy, main_cats_hier)
     main_dummies = set_main_cats(df[hier_list], main_cats)
 
-    reclassified_df = pd.concat([df[nets_cols],
+    reclassified_df = pd.concat([df[non_rundle_net_columns],
                                  hierarchy,
                                  main_dummies,
                                  main_hier_dummies,

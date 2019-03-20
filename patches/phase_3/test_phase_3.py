@@ -215,4 +215,5 @@ def test_output_shape():
     assert len(df_input) == len(df_output)
     # Subtract one because taking DES out of the hierarchy
     # Add it back because of adding NOT
-    assert len(df_input_allcols) == len(df_output.columns)
+    # Subtract another 7 for the stripped Rundle vars
+    assert len(df_input_allcols) - 7 == len(df_output.columns)
