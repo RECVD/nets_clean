@@ -76,7 +76,8 @@ def get_good_columns(filepath, main_cats, main_cats_hier):
 
     # exclude main categories and main hierarchy categories
     cols = [x for x in cols if not
-        any(y.lower() == x or z.lower() == x for y, z in zip(main_cats.keys(), main_cats_hier.keys()))]
+        any(y.lower() == x or z.lower() == x for y, z in zip(main_cats.keys(), main_cats_hier.keys())) and
+            x != 'adr_net_not_c_2014']
 
     return cols
 
@@ -125,26 +126,38 @@ def set_main_cats(category_dummies, main_cats):
 def write_file(df, writefile, first):
     """Write df to file.  Only write column names if first=True"""
     if first:
-        with open(writefile, "w", newline="\n") as f:
+        with open(writefile, "w", newline="\n", encoding='utf-8') as f:
             df.to_csv(f, index=False)
 
     else:
-        with open(writefile, "a", newline="\n") as f:
+        with open(writefile, "a", newline="\n", encoding='utf-8') as f:
             df.to_csv(f, index=False, header=False)
+
+
+def get_non_rundle_columns(net_columns):
+    """Given a list of NETS variable columns, return them with the Rundle columns stripped"""
+    rundle_codes = ["adl", "adp", "edu", "med", "pav", "pwd", "des"]
+    rundle_columns = ["adr_net_{}_c_2014".format(x) for x in rundle_codes]
+    non_rundle_columns = [x for x in net_columns if x not in rundle_columns]
+    return non_rundle_columns
 
 
 def reclassify(df, hier_list, main_cats, main_cats_hier):
     # split data into nets vs other
     nets_cols = [x for x in df.columns if 'net' in x]
+    non_rundle_net_columns = get_non_rundle_columns(nets_cols)
     gis_cols = [x for x in df.columns if 'net' not in x]
 
     hierarchy = set_hierarchy(df, hier_list)
+    # Add NOT variable
+    hierarchy['adr_net_not_c_2014'] = 1
+    cat_bool = hierarchy.any(axis=1)
+    hierarchy.loc[cat_bool, 'adr_net_not_c_2014'] = 0
 
-    # to be altered after truth revealed about main categories
     main_hier_dummies = set_main_cats(hierarchy, main_cats_hier)
     main_dummies = set_main_cats(df[hier_list], main_cats)
 
-    reclassified_df = pd.concat([df[nets_cols],
+    reclassified_df = pd.concat([df[non_rundle_net_columns],
                                  hierarchy,
                                  main_dummies,
                                  main_hier_dummies,
@@ -174,11 +187,20 @@ def main(data_path, write_path, main_cats_path, hier_list_path, chunksize=10**6)
 if __name__ == "__main__":
     from pathlib import Path
     import time
+    from tkinter import filedialog
+    from tkinter import *
 
-    root = Path.cwd()
+    root = Path.cwd().parent.parent
+    tk = Tk()
+    data_path = filedialog.askdirectory(initialdir=root,
+                                             title="Select file",
+                                             filetypes=[("csv files", "*.csv")])
+
+    print(data_path)
+
 
     data_path = root.parent.parent.parent / "data" / "recvd_net_vars_v7_20180829.csv"
-    write_path = root.parent / "data" / "data_out" / "recvd_net_vars_v8_20190306.csv"
+    write_path = root.parent / "data" / "data_out" / "recvd_net_vars_v9_20190320.csv"
     main_cats_path = root.parent.parent / 'config' / 'main_categories.json'
     hier_list_path = root.parent.parent / 'config' /'hierarchy_list.txt'
 

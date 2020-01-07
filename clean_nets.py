@@ -83,39 +83,40 @@ class Cleaner:
         return final_columns
 
 
-    def normalize_df(self, df):
+    def normalize_df(self, loc_df):
         """" Changes database from long form to normalized form, only including updates and removing redundant data
 
-        :param df: DataFrame in the long format.  Should have MultiIndex (DunsNumber, Year)
+        :param loc_df: Location DataFrame in the long format.  Should have MultiIndex (DunsNumber, Year)
+        :param sic_df: Sic DataFrame in the long format.  Should have MultiIndex (DunsNumber, Year)
 
         :return Normalized Data Frame
         """
 
-        # Generate df of FirstYear and LastYear
-        df.reset_index(inplace=True, drop=False)
-        grouped = df[['DunsNumber', 'Year']].groupby('DunsNumber')
+        # Generate loc_df of FirstYear and LastYear
+        loc_df.reset_index(inplace=True, drop=False)
+        grouped = loc_df[['DunsNumber', 'Year']].groupby('DunsNumber')
         firstyear = grouped.first().rename(columns={'Year': 'FirstYear'})
         lastyear = grouped.last().rename(columns={'Year': 'LastYear'})
         misc = pd.concat([firstyear, lastyear], axis=1)
         misc.set_index('FirstYear', append=True, inplace=True)
-        df.set_index(['DunsNumber', 'Year'], inplace=True)
+        loc_df.set_index(['DunsNumber', 'Year'], inplace=True)
 
         # Identify whether location changed at all for any given business
-        change = (df.groupby(level=0).nunique().sum(axis=1) /
-                  df.shape[1] > 1).rename('Change').to_frame()
+        change = (loc_df.groupby(level=0).nunique().sum(axis=1) /
+                  loc_df.shape[1] > 1).rename('Change').to_frame()
 
-        df = change.join(df)
+        loc_df = change.join(loc_df)
 
         # Drop duplicates, add DunsNumber as column to ensure no deletion between different businesses with identical rows
-        df['DunsNumber'] = df.index.get_level_values(level=0)
-        df = df.drop_duplicates()
-        del df['DunsNumber']
-        df.index.names = ['DunsNumber', 'FirstYear']  # formatting
+        loc_df['DunsNumber'] = loc_df.index.get_level_values(level=0)
+        loc_df = loc_df.drop_duplicates()
+        del loc_df['DunsNumber']
+        loc_df.index.names = ['DunsNumber', 'FirstYear']  # formatting
 
         # Join FirstYear and LastYear in from misc, and fill values forward
-        joined = misc.join(df, how='outer')
+        joined = misc.join(loc_df, how='outer')
         joined['LastYear'] = joined['LastYear'].groupby(level=0).ffill()
-        multi = joined[joined['Change'] == True]  # df with only businesses that had changes
+        multi = joined[joined['Change'] == True]  # loc_df with only businesses that had changes
 
         # Diagonal shift to fix years for multi businesses
         #shift_year = lambda joined: joined.index.get_level_values('FirstYear').to_series().shift(-1) - 1
@@ -127,7 +128,7 @@ class Cleaner:
         multi['LastYear'] = lastyear
         multi.set_index(['DunsNumber', 'FirstYear'], inplace=True)
 
-        # Join multi fixes into the original df and remove the Change column
+        # Join multi fixes into the original loc_df and remove the Change column
         joined = multi.combine_first(joined)
         #joined.loc[multi.index] = multi
         joined['LastYear'] = joined['LastYear'].astype('int64')
@@ -135,7 +136,7 @@ class Cleaner:
 
         return joined
 
-    def create_locations(self, location_filename_1, location_filename_2, write_path, sep='\t', chunksize=1*(10**6)):
+    def create_locations(self, location_filename_1, location_filename_2, write_path, sep='\t', chunksize=1*(10**5)):
         """ Creates a normalized location file for NETS data
 
         This file will be indexed by the BEH_ID, which is a combination of the DunsNumber and the BEH_LOC.  Other than
@@ -150,12 +151,16 @@ class Cleaner:
         :return: Normalized location of type pandas.DataFrame object
         """
 
-        # Find which columns we need to read
+        # Find which columns we need to read for address files
         with open(location_filename_1, 'r') as f1, open(location_filename_2, 'r') as f2:
             cols_1 = f1.readline().strip().split(sep)
             cols_2 = f2.readline().strip().split(sep)
+            # we can get rid of County code and city code as well
             usecols_1 = [x for x in cols_1 if 'CBSA' not in x]
             usecols_2 = [x for x in cols_2 if 'CBSA' not in x]
+
+        # Define columns to read for SIC file
+        sic_cols = ['DunsNumber'] + ['SIC' + str(x)[-2:] for x in range(1990, 2015)]
 
         # Need to do more error checking later on to try and break this
         try:
@@ -165,6 +170,7 @@ class Cleaner:
                                 sep=sep, encoding='Windows-1252', error_bad_lines=False)
             df_14 = pd.read_csv(location_filename_2, index_col=['DunsNumber'], chunksize=chunksize, usecols=usecols_2,
                                 sep=sep, encoding='Windows-1252', error_bad_lines=False)
+
         except IOError as e:
             # File does not exist
             print("I/O Error: {}".format(e))
@@ -177,6 +183,7 @@ class Cleaner:
             # Implementing full year changes for column names before melting, and joining into one DF
             chunk_99.columns = self.make_fullyear(chunk_99.columns)
             chunk_14.columns = self.make_fullyear(chunk_14.columns)
+
             chunk_loc = pd.concat([chunk_99, chunk_14], axis=1)
             # make citycode lowercase for formatting
             chunk_loc.columns = [col.upper() if 'CityCode' in col else col for col in chunk_loc.columns]
@@ -188,8 +195,9 @@ class Cleaner:
             # reset index and melt to long format
             chunk_loc.reset_index(inplace=True)
             melt_cols = ['Address', 'City', 'State', 'ZIP', 'CITYCODE', 'FipsCounty']
-            #melt_cols.remove('ZIP')
-            chunk_loc_long = pd.wide_to_long(chunk_loc, melt_cols, i='DunsNumber', j='Year').sort_index().dropna(how='all')
+            chunk_loc_long = pd.wide_to_long(chunk_loc, melt_cols, i='DunsNumber', j='Year') \
+                .sort_index() \
+                .dropna(how='all')
 
             # change year dtype to int and normalize
             idx = chunk_loc_long.index
@@ -223,15 +231,21 @@ class Cleaner:
                 print('.')
 
 def main():
+    import os
+    from pathlib import Path
+    from tkinter import filedialog, Tk
+
+    root = Tk()
+    root.withdraw()
+    data_dir = Path(filedialog.askdirectory(initial=os.getcwd(),
+                                       title='Select the root data folder'))
+    add99 = data_dir / 'raw' / 'NETS2014_AddressSpecial90to99.txt'
+    add00 = data_dir / 'raw' / 'NETS2014_AddressSpecial00to14.txt'
+    net_loc = data_dir / 'interim' / 'NETS2014_Locations.csv'
+
     clean = Cleaner()
-    try:
-        clean.create_locations(r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\NETS2014_AddressSpecial90to99.txt",
-                               r"C:\Users\jc4673\Documents\NETS\data\NETS2014_RAW\NETS2014_AddressSpecial00to14.txt",
-                               r"C:\Users\jc4673\Documents\NETS\data\NETS2014_WRANGLED\NETS2014_locations.csv")
-    except FileNotFoundError:
-        clean.create_locations(r"E:\NETDatabase2014_RAW\NETS2014_AddressSpecial90to99.txt",
-                              r"E:\NETDatabase2014_RAW\NETS2014_AddressSpecial00to14.txt",
-                              r"E:\NETSDatabase2014_CLEANED\NETS2014_Locations.csv")
+
+    clean.create_locations(add99, add00, net_loc)
 
 if __name__ == "__main__":
     time1 = time.time()
