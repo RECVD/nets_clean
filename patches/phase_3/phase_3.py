@@ -76,7 +76,8 @@ def get_good_columns(filepath, main_cats, main_cats_hier):
 
     # exclude main categories and main hierarchy categories
     cols = [x for x in cols if not
-        any(y.lower() == x or z.lower() == x for y, z in zip(main_cats.keys(), main_cats_hier.keys()))]
+        any(y.lower() == x or z.lower() == x for y, z in zip(main_cats.keys(), main_cats_hier.keys())) and
+            x != 'adr_net_not_c_2014']
 
     return cols
 
@@ -164,7 +165,7 @@ def reclassify(df, hier_list, main_cats, main_cats_hier):
     return reclassified_df
 
 
-def main(data_path, write_path, main_cats_path, hier_list_path, chunksize=10**3):
+def main(data_path, write_path, main_cats_path, hier_list_path, chunksize=10**6):
     """Implement the total fix:  Read, transform, write."""
     main_cats_hier = load_main_cat_config(main_cats_path, hierarchies=True)
     main_cats = load_main_cat_config(main_cats_path, hierarchies=False)
@@ -186,11 +187,20 @@ def main(data_path, write_path, main_cats_path, hier_list_path, chunksize=10**3)
 if __name__ == "__main__":
     from pathlib import Path
     import time
+    from tkinter import filedialog
+    from tkinter import *
 
-    root = Path.cwd()
+    root = Path.cwd().parent.parent
+    tk = Tk()
+    data_path = filedialog.askdirectory(initialdir=root,
+                                             title="Select file",
+                                             filetypes=[("csv files", "*.csv")])
+
+    print(data_path)
+
 
     data_path = root.parent.parent.parent / "data" / "recvd_net_vars_v7_20180829.csv"
-    write_path = root.parent / "data" / "data_out" / "some_shit.csv" #"recvd_net_vars_v8_20190306.csv"
+    write_path = root.parent / "data" / "data_out" / "recvd_net_vars_v9_20190320.csv"
     main_cats_path = root.parent.parent / 'config' / 'main_categories.json'
     hier_list_path = root.parent.parent / 'config' /'hierarchy_list.txt'
 

@@ -51,7 +51,7 @@ if __name__ == "__main__":
     config_filepath = Path.cwd().parent.parent / 'config'
     main_cats_filepath = config_filepath / 'main_categories.json'
     hierarchies_filepath = config_filepath / 'hierarchy_list.txt'
-    df_dirpath = Path.cwd().parent / 'data' / 'data_intermediate'
+    df_dirpath = Path.cwd().parent.parent / 'data' / 'data_intermediate'
     df_sample_path = [x for x in df_dirpath.iterdir() if "sample" in str(x)][0]
     print("Performing tests on {}\n".format(df_sample_path.name))
 

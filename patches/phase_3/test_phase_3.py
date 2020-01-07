@@ -17,8 +17,8 @@ def setup_module():
     config_filepath = Path.cwd().parent.parent / 'config'
     main_cats_filepath = config_filepath / 'main_categories.json'
     hierarchies_filepath = config_filepath / 'hierarchy_list.txt'
-    df_filepath = Path.cwd().parent.parent.parent / 'data' / \
-                  "recvd_net_vars_v7_20180829.csv"
+    df_filepath = Path.cwd().parent.parent / 'data' / 'data_out' /  \
+                  "recvd_net_vars_v9_20190320.csv"
 
     global main_cats
     main_cats = phase_3.load_main_cat_config(main_cats_filepath, hierarchies=False)
@@ -90,12 +90,6 @@ def test_get_good_columns():
                          'adr_net_behsic_x_2014',
                          'adr_net_company_x_2014',
                          'adr_net_tradename_x_2014',
-                         'adr_net_adl_c_2014',
-                         'adr_net_adp_c_2014',
-                         'adr_net_edu_c_2014',
-                         'adr_net_med_c_2014',
-                         'adr_net_pav_c_2014',
-                         'adr_net_pwd_c_2014',
                          'adr_net_piz_c_2014',
                          'adr_net_bkn_c_2014',
                          'adr_net_eat_c_2014',
@@ -119,7 +113,6 @@ def test_get_good_columns():
                          'adr_net_mpa_c_2014',
                          'adr_net_bnk_c_2014',
                          'adr_net_crd_c_2014',
-                         'adr_net_des_c_2014',
                          'adr_net_nut_c_2014',
                          'adr_net_beu_c_2014',
                          'adr_net_lib_c_2014',
@@ -207,7 +200,6 @@ def test_get_good_columns():
                          't10_cen_uid_u_2010',
                          't10_gis_area_k_2010',
                          't10_gis_area_l_2010'])
-
     assert [x for x in good_cols if x not in truth] == []
     assert [x for x in truth if x not in good_cols] == []
 
@@ -216,4 +208,15 @@ def test_output_shape():
     # Subtract one because taking DES out of the hierarchy
     # Add it back because of adding NOT
     # Subtract another 7 for the stripped Rundle vars
-    assert len(df_input_allcols) - 7 == len(df_output.columns)
+    print(len(df_input_allcols))
+    print(len(df_input.columns))
+    print(len(df_output.columns.tolist()))
+
+    print([x for x in df_output.columns.tolist() if x not in df_input_allcols])
+    print([x for x in df_input_allcols if x not in df_output.columns.tolist()])
+
+    with open('test.csv', 'w') as f:
+        for thing_in, thing_out in zip(df_input_allcols, df_output.columns):
+            f.write(thing_in + ',' + thing_out + '\n')
+
+    assert len(df_input_allcols) == len(df_output.columns.tolist())
