@@ -1,5 +1,7 @@
 # nets_clean
 
+**Please note - this code was originally meant to replace the nets_wrangle repo, which is convoluted, difficult to follow, and likely missing pieces.  While this code is much cleaner, it is incomplete.**
+
 General Workflow For Creation of the final NETS dataset
 
 Jesse
